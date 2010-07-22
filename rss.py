@@ -18,9 +18,14 @@ for pkg in pkgs:
 	if not lastBuildDate:
 		lastBuildDate = pkg.build
 
+	if pkg.epoch == '0':
+		title = '%s-%s-%s.%s' % ( pkg.name, pkg.ver, pkg.rel, pkg.arch )
+	else:
+		title = '%s:%s-%s-%s.%s' % ( pkg.epoch, pkg.name, pkg.ver, pkg.rel, pkg.arch )
+
 	items.append(
 		PyRSS2Gen.RSSItem(
-			title = '%s:%s-%s-%s' % ( pkg.epoch, pkg.name, pkg.ver, pkg.rel ),
+			title = title,
 			link = pkg.url,
 			description = pkg.url,
 			guid = PyRSS2Gen.Guid(pkg.url,1),

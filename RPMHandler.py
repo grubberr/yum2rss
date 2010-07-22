@@ -10,6 +10,7 @@ class RPMHandler(ContentHandler):
 
 	_tag_package = False
 	_tag_name = False
+	_tag_arch = False
 
 	def __init__(self, pkgs):
 		self._buff = {}
@@ -34,10 +35,16 @@ class RPMHandler(ContentHandler):
 				self._buff['ver'] = attrs['ver']
 				self._buff['rel'] = attrs['rel']
 
+			if name == 'arch':
+				self._tag_arch = True
+
 	def characters(self, content):
 
 		if self._tag_name:
 			self._buff['name'] = content
+
+		if self._tag_arch:
+			self._buff['arch'] = content
 
 	def endElement(self, name):
 
@@ -46,10 +53,12 @@ class RPMHandler(ContentHandler):
 			if name == 'name':
 				self._tag_name = False
 
+			if name == 'arch':
+				self._tag_arch = False
+
 		if name == 'package':
 			self._tag_package = False
 
 			if self.search_pkgs.has_key(self._buff['name']) and self._buff['build'] > self.search_pkgs[self._buff['name']]:
-				logging.info('append pkg in xmlhandler')
 				self.pkgs.append(self._buff)
 			self._buff = {}

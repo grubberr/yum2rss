@@ -131,6 +131,7 @@ elif os.environ['PATH_INFO'] == '/parse_xml_task':
 			pkg.ver = i['ver']
 			pkg.rel = i['rel']
 			pkg.epoch = i['epoch']
+			pkg.arch = i['arch']
 			pkg.build = datetime.datetime.fromtimestamp(i['build'])
 			pkg.put()
 

@@ -18,3 +18,7 @@ handlers:
   - url: /(download|url_task|download_chunk_task|parse_xml_task)
     script: download.py
     login: admin
+
+  - url: /drop_db
+    script: drop_db.py
+    login: admin
