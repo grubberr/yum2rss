@@ -1,0 +1,4 @@
+cron:
+ - description: every day 00:00
+   url: /download
+   schedule: every day 00:00

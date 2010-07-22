@@ -1,0 +1,7 @@
+queue:
+- name: url-queue
+  rate: 8/m
+- name: download-chunk-queue
+  rate: 8/m
+- name: parse-xml-queue
+  rate: 8/m
