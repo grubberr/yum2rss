@@ -12,4 +12,5 @@ class RPM(db.Model):
 	rel = db.StringProperty()
 	epoch = db.StringProperty()
 	arch = db.StringProperty()
+	checksum = db.StringProperty()
 	build = db.DateTimeProperty()

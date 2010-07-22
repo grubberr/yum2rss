@@ -28,7 +28,7 @@ for pkg in pkgs:
 			title = title,
 			link = pkg.url,
 			description = pkg.url,
-			guid = PyRSS2Gen.Guid(pkg.url,1),
+			guid = PyRSS2Gen.Guid(pkg.checksum,0),
 			pubDate = pkg.build,
 	))
 

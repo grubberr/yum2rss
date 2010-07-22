@@ -11,6 +11,7 @@ class RPMHandler(ContentHandler):
 	_tag_package = False
 	_tag_name = False
 	_tag_arch = False
+	_tag_checksum = False
 
 	def __init__(self, pkgs):
 		self._buff = {}
@@ -38,6 +39,9 @@ class RPMHandler(ContentHandler):
 			if name == 'arch':
 				self._tag_arch = True
 
+			if name == 'checksum':
+				self._tag_checksum = True
+
 	def characters(self, content):
 
 		if self._tag_name:
@@ -45,6 +49,9 @@ class RPMHandler(ContentHandler):
 
 		if self._tag_arch:
 			self._buff['arch'] = content
+
+		if self._tag_checksum:
+			self._buff['checksum'] = content
 
 	def endElement(self, name):
 
@@ -55,6 +62,9 @@ class RPMHandler(ContentHandler):
 
 			if name == 'arch':
 				self._tag_arch = False
+
+			if name == 'checksum':
+				self._tag_checksum = False
 
 		if name == 'package':
 			self._tag_package = False
