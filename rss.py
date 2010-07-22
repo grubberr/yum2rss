@@ -8,6 +8,22 @@ from google.appengine.ext import db
 from Models import RPM
 import config
 
+def get_title(pkg):
+	if pkg.epoch == '0':
+		title = '%s-%s-%s.%s' % ( pkg.name, pkg.ver, pkg.rel, pkg.arch )
+	else:
+		title = '%s:%s-%s-%s.%s' % ( pkg.epoch, pkg.name, pkg.ver, pkg.rel, pkg.arch )
+
+	return title
+
+def get_description(pkg):
+	description = "<br/>\n".join(pkg.description.split("\n")) + "<br/>\n"
+	output = """<p><strong> %s </strong> - %s </p>
+<p> %s </p>
+""" % ( pkg.name, pkg.summary, description )
+
+	return output
+
 items = []
 lastBuildDate = None
 
@@ -18,16 +34,11 @@ for pkg in pkgs:
 	if not lastBuildDate:
 		lastBuildDate = pkg.build
 
-	if pkg.epoch == '0':
-		title = '%s-%s-%s.%s' % ( pkg.name, pkg.ver, pkg.rel, pkg.arch )
-	else:
-		title = '%s:%s-%s-%s.%s' % ( pkg.epoch, pkg.name, pkg.ver, pkg.rel, pkg.arch )
-
 	items.append(
 		PyRSS2Gen.RSSItem(
-			title = title,
+			title = get_title(pkg),
 			link = pkg.url,
-			description = pkg.url,
+			description = get_description(pkg),
 			guid = PyRSS2Gen.Guid(pkg.checksum,0),
 			pubDate = pkg.build,
 	))

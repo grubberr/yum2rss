@@ -12,6 +12,8 @@ class RPMHandler(ContentHandler):
 	_tag_name = False
 	_tag_arch = False
 	_tag_checksum = False
+	_tag_summary = False
+	_tag_description = False
 
 	def __init__(self, pkgs):
 		self._buff = {}
@@ -42,6 +44,14 @@ class RPMHandler(ContentHandler):
 			if name == 'checksum':
 				self._tag_checksum = True
 
+			if name == 'summary':
+				self._tag_summary = True
+				self._buff['summary'] = []
+
+			if name == 'description':
+				self._tag_description = True
+				self._buff['description'] = []
+
 	def characters(self, content):
 
 		if self._tag_name:
@@ -52,6 +62,12 @@ class RPMHandler(ContentHandler):
 
 		if self._tag_checksum:
 			self._buff['checksum'] = content
+
+		if self._tag_summary:
+			self._buff['summary'].append(content)
+
+		if self._tag_description:
+			self._buff['description'].append(content)
 
 	def endElement(self, name):
 
@@ -65,6 +81,12 @@ class RPMHandler(ContentHandler):
 
 			if name == 'checksum':
 				self._tag_checksum = False
+
+			if name == 'summary':
+				self._tag_summary = False
+
+			if name == 'description':
+				self._tag_description = False
 
 		if name == 'package':
 			self._tag_package = False

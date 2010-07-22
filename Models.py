@@ -13,4 +13,6 @@ class RPM(db.Model):
 	epoch = db.StringProperty()
 	arch = db.StringProperty()
 	checksum = db.StringProperty()
+	summary = db.StringProperty(multiline=True)
+	description = db.StringProperty(multiline=True)
 	build = db.DateTimeProperty()
