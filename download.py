@@ -43,12 +43,13 @@ def set_last_modified(url,last_modified):
 if os.environ['PATH_INFO'] == '/download':
 
 	for url in config.urls.keys():
-		taskqueue.Queue('url-queue').add(taskqueue.Task(url='/url_task', params={ 'url': url }))
+		taskqueue.Queue('url-queue').add(taskqueue.Task(url='/url_task', params={ 'url': url, 'parser': '/parse_xml_task' }))
 
 elif os.environ['PATH_INFO'] == '/url_task':
 
 	form = cgi.FieldStorage()
 	url = form.getfirst('url')
+	parser = form.getfirst('parser')
 
 	logging.info('url=%s' % ( url, ) )
 	logging.info('X-AppEngine-TaskRetryCount=%s' % ( os.environ['HTTP_X_APPENGINE_TASKRETRYCOUNT'], ))
@@ -74,13 +75,14 @@ elif os.environ['PATH_INFO'] == '/url_task':
 			memcache.delete('count',namespace=url)
 
 			for _range in ranges:
-				params = { 'url': url, 'range_start': _range[0], 'range_end': _range[1] }
+				params = { 'url': url, 'parser': parser, 'range_start': _range[0], 'range_end': _range[1] }
 				taskqueue.Queue('download-chunk-queue').add(taskqueue.Task(url='/download_chunk_task', params=params))
 
 elif os.environ['PATH_INFO'] == '/download_chunk_task':
 
 	form = cgi.FieldStorage()
 	url = form.getfirst('url')
+	parser = form.getfirst('parser')
 	_range = ( int(form.getfirst('range_start')), int(form.getfirst('range_end')) )
 
 	logging.info('bytes=%d-%d' % ( _range[0], _range[1] ))
@@ -91,7 +93,7 @@ elif os.environ['PATH_INFO'] == '/download_chunk_task':
 	memcache.set((str(_range[0]),str(_range[1])),result.content,namespace=url)
 
 	if memcache.decr('lock',namespace=url) == 0:
-		taskqueue.Queue('parse-xml-queue').add(taskqueue.Task(url='/parse_xml_task',params = { 'url': url }))
+		taskqueue.Queue('parse-xml-queue').add(taskqueue.Task(url=parser,params = { 'url': url }))
 
 elif os.environ['PATH_INFO'] == '/parse_xml_task':
 
