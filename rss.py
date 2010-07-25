@@ -24,6 +24,9 @@ def get_description(pkg):
 
 	return output
 
+def get_link(pkg):
+	return pkg.url + '/' + pkg.location
+
 items = []
 lastBuildDate = None
 
@@ -37,7 +40,7 @@ for pkg in pkgs:
 	items.append(
 		PyRSS2Gen.RSSItem(
 			title = get_title(pkg),
-			link = pkg.url,
+			link = get_link(pkg),
 			description = get_description(pkg),
 			guid = PyRSS2Gen.Guid(pkg.checksum,0),
 			pubDate = pkg.build,

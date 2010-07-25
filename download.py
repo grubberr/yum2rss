@@ -42,13 +42,18 @@ def set_last_modified(url,last_modified):
 
 if os.environ['PATH_INFO'] == '/download':
 
-	for url in config.urls.keys():
-		taskqueue.Queue('url-queue').add(taskqueue.Task(url='/url_task', params={ 'url': url, 'parser': '/parse_xml_task' }))
+	for repos in config.urls.keys():
+		url = repos + '/repodata/primary.xml.gz'
+		params = { 'url': url,
+			   'repos': repos,
+			   'parser': '/parse_xml_task' }
+		taskqueue.Queue('url-queue').add(taskqueue.Task(url='/url_task',params=params))
 
 elif os.environ['PATH_INFO'] == '/url_task':
 
 	form = cgi.FieldStorage()
 	url = form.getfirst('url')
+	repos = form.getfirst('repos')
 	parser = form.getfirst('parser')
 
 	logging.info('url=%s' % ( url, ) )
@@ -75,13 +80,18 @@ elif os.environ['PATH_INFO'] == '/url_task':
 			memcache.delete('count',namespace=url)
 
 			for _range in ranges:
-				params = { 'url': url, 'parser': parser, 'range_start': _range[0], 'range_end': _range[1] }
+				params = { 'url': url,
+					   'repos': repos,
+					   'parser': parser,
+					   'range_start': _range[0],
+					   'range_end': _range[1] }
 				taskqueue.Queue('download-chunk-queue').add(taskqueue.Task(url='/download_chunk_task', params=params))
 
 elif os.environ['PATH_INFO'] == '/download_chunk_task':
 
 	form = cgi.FieldStorage()
 	url = form.getfirst('url')
+	repos = form.getfirst('repos')
 	parser = form.getfirst('parser')
 	_range = ( int(form.getfirst('range_start')), int(form.getfirst('range_end')) )
 
@@ -93,12 +103,13 @@ elif os.environ['PATH_INFO'] == '/download_chunk_task':
 	memcache.set((str(_range[0]),str(_range[1])),result.content,namespace=url)
 
 	if memcache.decr('lock',namespace=url) == 0:
-		taskqueue.Queue('parse-xml-queue').add(taskqueue.Task(url=parser,params = { 'url': url }))
+		taskqueue.Queue('parse-xml-queue').add(taskqueue.Task(url=parser,params = { 'url': url, 'repos': repos }))
 
 elif os.environ['PATH_INFO'] == '/parse_xml_task':
 
 	form = cgi.FieldStorage()
 	url = form.getfirst('url')
+	repos = form.getfirst('repos')
 
 	logging.info('url=%s' % ( url, ) )
 	logging.info('X-AppEngine-TaskRetryCount=%s' % ( os.environ['HTTP_X_APPENGINE_TASKRETRYCOUNT'], ))
@@ -106,8 +117,8 @@ elif os.environ['PATH_INFO'] == '/parse_xml_task':
 	d = zlib.decompressobj(16 + zlib.MAX_WBITS)
 
 	pkgs = {}
-	for _pkg in config.urls[url]:
-		query = db.GqlQuery('SELECT * FROM RPM WHERE name = :1 AND url = :2 ORDER BY build DESC',_pkg,url)
+	for _pkg in config.urls[repos]:
+		query = db.GqlQuery('SELECT * FROM RPM WHERE name = :1 AND url = :2 ORDER BY build DESC',_pkg,repos)
 		if query.count() > 0:
 			pkgs[_pkg] = int(time.mktime(query.get().build.timetuple()))
 		else:
@@ -128,7 +139,7 @@ elif os.environ['PATH_INFO'] == '/parse_xml_task':
 
 		for i in ch.pkgs:
 			pkg = RPM()
-			pkg.url = url
+			pkg.url = repos
 			pkg.name = i['name']
 			pkg.ver = i['ver']
 			pkg.rel = i['rel']
@@ -138,6 +149,7 @@ elif os.environ['PATH_INFO'] == '/parse_xml_task':
 			pkg.summary = ''.join(i['summary'])
 			pkg.description = ''.join(i['description'])
 			pkg.build = datetime.datetime.fromtimestamp(i['build'])
+			pkg.location = i['location']
 			pkg.put()
 
 		set_last_modified(url,memcache.get('last-modified',namespace=url))

@@ -52,6 +52,9 @@ class RPMHandler(ContentHandler):
 				self._tag_description = True
 				self._buff['description'] = []
 
+			if name == 'location':
+				self._buff['location'] = attrs['href']
+
 	def characters(self, content):
 
 		if self._tag_name:
