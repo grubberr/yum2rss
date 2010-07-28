@@ -117,8 +117,9 @@ elif os.environ['PATH_INFO'] == '/parse_xml_task':
 	d = zlib.decompressobj(16 + zlib.MAX_WBITS)
 
 	pkgs = {}
+	query = db.GqlQuery('SELECT * FROM RPM WHERE name = :1 AND url = :2 ORDER BY build DESC LIMIT 1')
 	for _pkg in config.urls[repos]:
-		query = db.GqlQuery('SELECT * FROM RPM WHERE name = :1 AND url = :2 ORDER BY build DESC',_pkg,repos)
+		query.bind(_pkg,repos)
 		if query.count() > 0:
 			pkgs[_pkg] = int(time.mktime(query.get().build.timetuple()))
 		else:
