@@ -68,10 +68,10 @@ elif os.environ['PATH_INFO'] == '/url_task':
 
 		memcache.set('last-modified',result.headers['last-modified'],namespace=url)
 
-		if result.headers.has_key('Accept-Ranges'):
+		length = int(result.headers['Content-Length'])
 
-			length = result.headers['Content-Length']
-			length = int(length)
+		if result.headers.has_key('Accept-Ranges') or ( length < config.urlfetch_limit ):
+
 			ranges = map(lambda x,y: [x,y],range(0,length-1,config.urlfetch_limit),range(config.urlfetch_limit-1,length,config.urlfetch_limit))
 			ranges[-1][1] = length - 1
 
