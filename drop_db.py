@@ -1,14 +1,24 @@
 #!/usr/bin/python
 
+import remote_api
 from google.appengine.ext import db
 
 from Models import RPM
 from Models import URL
 
-db.delete(RPM.all().fetch(500))
-db.delete(RPM.all().fetch(500))
-db.delete(RPM.all().fetch(500))
+def drop_all_entities(Model):
 
-db.delete(URL.all().fetch(500))
-db.delete(URL.all().fetch(500))
-db.delete(URL.all().fetch(500))
+	count = 0
+	q = Model.all(keys_only=True)
+
+	while True:
+		keys = q.fetch(100)
+		if not keys:
+			break
+		count += len(keys)
+		db.delete(keys)
+
+	print '%s Model - %s entities deleted' % ( Model.kind(), count )
+
+drop_all_entities(RPM)
+drop_all_entities(URL)
