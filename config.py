@@ -26,6 +26,10 @@ urls = {
  'http://downloads.mongodb.org/distros/centos/5.4/os/i386' : [ 'mongo-stable', 'mongo-stable-server' ],
 
  'http://74.50.3.177/repos'                          : [ 'pkg1', 'pkg2', 'pkg3' ],
+
+ 'http://download.fedoraproject.org/pub/epel/5/i386' : [ 'Django', 'awstats', 'erlang', 'mysql-proxy',
+							 'nagios', 'ocaml', 'perl-Crypt-CBC', 'phpMyAdmin', 'phpPgAdmin', 'python-GeoIP',
+							 'python-twisted-core', 'python26', 'wordpress' ]
 }
 
 ########################################### config ###################################################

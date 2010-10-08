@@ -8,6 +8,7 @@ import cgi
 
 import datetime
 import time
+import xml.etree.cElementTree as ET
 
 from xml.sax import make_parser
 import xml.sax.xmlreader
@@ -43,10 +44,10 @@ def set_last_modified(url,last_modified):
 if os.environ['PATH_INFO'] == '/download':
 
 	for repos in config.urls.keys():
-		url = repos + '/repodata/primary.xml.gz'
+		url = repos + '/repodata/repomd.xml'
 		params = { 'url': url,
 			   'repos': repos,
-			   'parser': '/parse_xml_task' }
+			   'parser': '/parse_repomd' }
 		taskqueue.Queue('url-queue').add(taskqueue.Task(url='/url_task',params=params))
 
 elif os.environ['PATH_INFO'] == '/url_task':
@@ -104,6 +105,46 @@ elif os.environ['PATH_INFO'] == '/download_chunk_task':
 
 	if memcache.decr('lock',namespace=url) == 0:
 		taskqueue.Queue('parse-xml-queue').add(taskqueue.Task(url=parser,params = { 'url': url, 'repos': repos }))
+
+elif os.environ['PATH_INFO'] == '/parse_repomd':
+
+	form = cgi.FieldStorage()
+	url = form.getfirst('url')
+	repos = form.getfirst('repos')
+
+	logging.info('url=%s' % ( url, ) )
+	logging.info('X-AppEngine-TaskRetryCount=%s' % ( os.environ['HTTP_X_APPENGINE_TASKRETRYCOUNT'], ))
+
+	try:
+
+		ranges = memcache.get('ranges',namespace=url)
+		assert ranges, "memcache key 'ranges' invalid"
+		ranges = [ "%d-%d" % ( r[0], r[1] ) for r in ranges ]
+		ranges_data = memcache.get_multi(ranges,namespace=url)
+
+		xml = ''
+		for _range in ranges:
+			assert ranges_data.has_key(_range), "memcache key '%s' invalid" % ( _range, )
+			xml += ranges_data[_range]
+
+		primary = False
+
+		metadata = ET.fromstring(xml)
+		for data in metadata.findall('{http://linux.duke.edu/metadata/repo}data'):
+			if data.attrib['type'] == 'primary':
+				location = data.find('{http://linux.duke.edu/metadata/repo}location')
+				primary = location.attrib['href']
+
+		assert primary, "wrong repomd.xml file"
+		url = repos + '/' + primary
+
+		params = { 'url': url,
+			   'repos': repos,
+			   'parser': '/parse_xml_task' }
+		taskqueue.Queue('url-queue').add(taskqueue.Task(url='/url_task',params=params))
+
+	except:
+		logging.warning("Unexpected error: %s" % ( sys.exc_info()[1], ))
 
 elif os.environ['PATH_INFO'] == '/parse_xml_task':
 
