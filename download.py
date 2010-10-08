@@ -100,7 +100,7 @@ elif os.environ['PATH_INFO'] == '/download_chunk_task':
 	logging.info('X-AppEngine-TaskRetryCount=%s' % ( os.environ['HTTP_X_APPENGINE_TASKRETRYCOUNT'], ))
 
 	result = urlfetch.fetch(url,method=urlfetch.GET,headers={'Range': 'bytes=%d-%d' % ( _range[0], _range[1] )},deadline=10)
-	memcache.set((str(_range[0]),str(_range[1])),result.content,namespace=url)
+	memcache.set("%d-%d" % ( _range[0], _range[1] ),result.content,namespace=url)
 
 	if memcache.decr('lock',namespace=url) == 0:
 		taskqueue.Queue('parse-xml-queue').add(taskqueue.Task(url=parser,params = { 'url': url, 'repos': repos }))
@@ -134,7 +134,7 @@ elif os.environ['PATH_INFO'] == '/parse_xml_task':
 
 		for _range in memcache.get('ranges',namespace=url):
 
-			content = memcache.get((str(_range[0]),str(_range[1])),namespace=url)
+			content = memcache.get("%d-%d" % ( _range[0], _range[1] ),namespace=url)
 			data = d.decompress(content)
 			p.feed(data)
 
@@ -160,7 +160,7 @@ elif os.environ['PATH_INFO'] == '/parse_xml_task':
 
 	# flush memory
 	for _range in memcache.get('ranges',namespace=url):
-		memcache.delete((str(_range[0]),str(_range[1])),namespace=url)
+		memcache.delete("%d-%d" % ( _range[0], _range[1] ),namespace=url)
 	memcache.delete('ranges',namespace=url)
 	memcache.delete('last-modified',namespace=url)
 	memcache.delete('lock',namespace=url)
