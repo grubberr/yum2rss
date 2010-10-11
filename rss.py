@@ -22,6 +22,12 @@ def get_description(pkg):
 <p> %s </p>
 """ % ( pkg.name, pkg.summary, description )
 
+	output += "<p><strong>Change Log:</strong></p>\n"
+	output += "<pre>\n"
+	for logs in pkg.changelogs[0:3]:
+		output += "%s - %s\n%s\n" % ( logs.date.ctime(), logs.author, logs.text )
+	output += "</pre>\n"
+
 	return output
 
 def get_link(pkg):
@@ -30,7 +36,7 @@ def get_link(pkg):
 items = []
 lastBuildDate = None
 
-pkgs = db.GqlQuery('SELECT * FROM RPM ORDER BY build DESC')
+pkgs = db.GqlQuery('SELECT * FROM RPM WHERE haslog = :1 ORDER BY build DESC',True)
 
 for pkg in pkgs:
 

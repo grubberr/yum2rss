@@ -5,6 +5,7 @@ from google.appengine.ext import db
 
 from Models import RPM
 from Models import URL
+from Models import LOG
 
 def drop_all_entities(Model):
 
@@ -22,3 +23,4 @@ def drop_all_entities(Model):
 
 drop_all_entities(RPM)
 drop_all_entities(URL)
+drop_all_entities(LOG)

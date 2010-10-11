@@ -21,8 +21,10 @@ from google.appengine.ext import db
 
 from Models import RPM
 from Models import URL
+from Models import LOG
 import config
 from RPMHandler import RPMHandler
+from LOGHandler import LOGHandler
 
 def get_last_modified(url):
 	query = URL().all().filter('url =',url)
@@ -54,6 +56,7 @@ elif os.environ['PATH_INFO'] == '/url_task':
 
 	form = cgi.FieldStorage()
 	url = form.getfirst('url')
+	other_url = form.getfirst('other_url')
 	repos = form.getfirst('repos')
 	parser = form.getfirst('parser')
 
@@ -82,6 +85,7 @@ elif os.environ['PATH_INFO'] == '/url_task':
 
 			for _range in ranges:
 				params = { 'url': url,
+					   'other_url': other_url,
 					   'repos': repos,
 					   'parser': parser,
 					   'range_start': _range[0],
@@ -92,6 +96,7 @@ elif os.environ['PATH_INFO'] == '/download_chunk_task':
 
 	form = cgi.FieldStorage()
 	url = form.getfirst('url')
+	other_url = form.getfirst('other_url')
 	repos = form.getfirst('repos')
 	parser = form.getfirst('parser')
 	_range = ( int(form.getfirst('range_start')), int(form.getfirst('range_end')) )
@@ -104,7 +109,7 @@ elif os.environ['PATH_INFO'] == '/download_chunk_task':
 	memcache.set("%d-%d" % ( _range[0], _range[1] ),result.content,namespace=url)
 
 	if memcache.decr('lock',namespace=url) == 0:
-		taskqueue.Queue('parse-xml-queue').add(taskqueue.Task(url=parser,params = { 'url': url, 'repos': repos }))
+		taskqueue.Queue('parse-xml-queue').add(taskqueue.Task(url=parser,params = { 'url': url, 'other_url': other_url, 'repos': repos }))
 
 elif os.environ['PATH_INFO'] == '/parse_repomd':
 
@@ -128,17 +133,24 @@ elif os.environ['PATH_INFO'] == '/parse_repomd':
 			xml += ranges_data[_range]
 
 		primary = False
+		other = False
 
 		metadata = ET.fromstring(xml)
 		for data in metadata.findall('{http://linux.duke.edu/metadata/repo}data'):
 			if data.attrib['type'] == 'primary':
 				location = data.find('{http://linux.duke.edu/metadata/repo}location')
 				primary = location.attrib['href']
+			if data.attrib['type'] == 'other':
+				location = data.find('{http://linux.duke.edu/metadata/repo}location')
+				other = location.attrib['href']
 
 		assert primary, "wrong repomd.xml file"
+		assert other, "wrong repomd.xml file"
 		url = repos + '/' + primary
+		other_url = repos + '/' + other
 
 		params = { 'url': url,
+			   'other_url': other_url,
 			   'repos': repos,
 			   'parser': '/parse_xml_task' }
 		taskqueue.Queue('url-queue').add(taskqueue.Task(url='/url_task',params=params))
@@ -150,6 +162,7 @@ elif os.environ['PATH_INFO'] == '/parse_xml_task':
 
 	form = cgi.FieldStorage()
 	url = form.getfirst('url')
+	other_url = form.getfirst('other_url')
 	repos = form.getfirst('repos')
 
 	logging.info('url=%s' % ( url, ) )
@@ -193,6 +206,64 @@ elif os.environ['PATH_INFO'] == '/parse_xml_task':
 			pkg.build = datetime.datetime.fromtimestamp(i['build'])
 			pkg.location = i['location']
 			pkg.put()
+
+		set_last_modified(url,memcache.get('last-modified',namespace=url))
+
+		params = { 'url': other_url,
+			   'repos': repos,
+			   'parser': '/parse_other' }
+		taskqueue.Queue('url-queue').add(taskqueue.Task(url='/url_task',params=params))
+
+	except:
+		logging.warning("Unexpected error: %s" % ( sys.exc_info()[1], ))
+
+	# flush memory
+	for _range in memcache.get('ranges',namespace=url):
+		memcache.delete("%d-%d" % ( _range[0], _range[1] ),namespace=url)
+	memcache.delete('ranges',namespace=url)
+	memcache.delete('last-modified',namespace=url)
+	memcache.delete('lock',namespace=url)
+
+elif os.environ['PATH_INFO'] == '/parse_other':
+
+	form = cgi.FieldStorage()
+	url = form.getfirst('url')
+	repos = form.getfirst('repos')
+
+	logging.info('url=%s' % ( url, ) )
+	logging.info('X-AppEngine-TaskRetryCount=%s' % ( os.environ['HTTP_X_APPENGINE_TASKRETRYCOUNT'], ))
+
+	RPM_hash = {}
+	for pkg in db.GqlQuery('SELECT * FROM RPM WHERE url = :1 AND haslog = :2',repos,False):
+		RPM_hash[pkg.checksum] = pkg
+
+	ch = LOGHandler(RPM_hash.keys(),limit=3)
+	p = make_parser(['xml.sax.xmlreader.IncrementalParser'])
+	p.setContentHandler(ch)
+	d = zlib.decompressobj(16 + zlib.MAX_WBITS)
+
+	try:
+		for _range in memcache.get('ranges',namespace=url):
+			content = memcache.get("%d-%d" % ( _range[0], _range[1] ),namespace=url)
+			data = d.decompress(content)
+			p.feed(data)
+
+		LOG_list = []
+
+		for pkgid in ch.changelogs.keys():
+
+			for changelog in ch.changelogs[pkgid]:
+				log = LOG()
+				log.author = changelog['author']
+				log.date = datetime.datetime.fromtimestamp(int(changelog['date']))
+				log.text = ''.join(changelog['text'])
+				log.RPM = RPM_hash[pkgid].key()
+				LOG_list.append(log)
+
+			RPM_hash[pkgid].haslog = True
+
+		db.put(LOG_list)
+		db.put(RPM_hash.values())
 
 		set_last_modified(url,memcache.get('last-modified',namespace=url))
 

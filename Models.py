@@ -17,3 +17,10 @@ class RPM(db.Model):
 	description = db.TextProperty()
 	location = db.StringProperty()
 	build = db.DateTimeProperty()
+	haslog = db.BooleanProperty(default=False)
+
+class LOG(db.Model):
+	author = db.StringProperty()
+	date = db.DateTimeProperty()
+	text = db.TextProperty()
+	RPM = db.ReferenceProperty(RPM,collection_name='changelogs')
