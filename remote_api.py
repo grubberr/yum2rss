@@ -1,9 +1,22 @@
 #!/usr/bin/env python
 
+from __future__ import with_statement
 import sys
+import os
 
-sys.path.insert(0,'/home/ant/GAE/google_appengine')
-sys.path.insert(1,'/home/ant/GAE/google_appengine/lib/yaml/lib')
+DIR_PATH = '/home/ant/GAE/google_appengine'
+
+EXTRA_PATHS = [
+  DIR_PATH,
+  os.path.join(DIR_PATH, 'lib', 'antlr3'),
+  os.path.join(DIR_PATH, 'lib', 'django'),
+  os.path.join(DIR_PATH, 'lib', 'fancy_urllib'),
+  os.path.join(DIR_PATH, 'lib', 'ipaddr'),
+  os.path.join(DIR_PATH, 'lib', 'webob'),
+  os.path.join(DIR_PATH, 'lib', 'yaml', 'lib'),
+]
+
+sys.path = EXTRA_PATHS + sys.path
 
 import yaml
 
