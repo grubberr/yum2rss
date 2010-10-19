@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from xml.sax import make_parser
 import xml.sax.xmlreader
