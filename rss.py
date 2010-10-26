@@ -33,12 +33,25 @@ def get_description(pkg):
 def get_link(pkg):
 	return pkg.url + '/' + pkg.location
 
+def get_pkgs():
+
+	show_days = 3
+	show_nums = 20
+
+	def get_base_query():
+		return RPM.all().filter('haslog =',True)
+
+	pkgs = get_base_query().filter('build >',(datetime.datetime.now() - datetime.timedelta(days=show_days))).order('-build').fetch(100)
+
+	if 0 < len(pkgs) < show_nums:
+		pkgs += get_base_query().filter('build <=',pkgs[-1].build).order('-build').fetch((show_nums - len(pkgs)),1)
+
+	return pkgs
+
 items = []
 lastBuildDate = None
 
-pkgs = db.GqlQuery('SELECT * FROM RPM WHERE haslog = :1 ORDER BY build DESC',True)
-
-for pkg in pkgs:
+for pkg in get_pkgs():
 
 	if not lastBuildDate:
 		lastBuildDate = pkg.build
