@@ -27,7 +27,7 @@ from RPMHandler import RPMHandler
 from LOGHandler import LOGHandler
 
 def get_last_modified(url):
-	query = URL().all().filter('url =',url)
+	query = URL.all().filter('url =',url)
 	entity = query.get()
 	if entity:
 		return entity.last_modified
@@ -35,7 +35,7 @@ def get_last_modified(url):
 		return None
 
 def set_last_modified(url,last_modified):
-	query = URL().all().filter('url =',url)
+	query = URL.all().filter('url =',url)
 	entity = query.get()
 	if entity:
 		entity.last_modified = last_modified
