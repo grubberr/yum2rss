@@ -1,7 +1,7 @@
 
 from google.appengine.ext import db
 
-class URL(db.Model):
+class Repos(db.Model):
 	url = db.StringProperty()
 	last_modified = db.StringProperty()
 
