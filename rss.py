@@ -39,12 +39,14 @@ def get_pkgs():
 	show_nums = 20
 
 	def get_base_query():
-		return RPM.all().filter('haslog =',True)
+		return RPM.all().filter('haslog =',True).order('-build')
 
-	pkgs = get_base_query().filter('build >',(datetime.datetime.now() - datetime.timedelta(days=show_days))).order('-build').fetch(100)
+	pkgs = get_base_query().filter('build >',(datetime.datetime.now() - datetime.timedelta(days=show_days))).fetch(100)
 
-	if 0 < len(pkgs) < show_nums:
-		pkgs += get_base_query().filter('build <=',pkgs[-1].build).order('-build').fetch((show_nums - len(pkgs)),1)
+	if len(pkgs) == 0:
+		pkgs = get_base_query().fetch(show_nums)
+	elif 0 < len(pkgs) < show_nums:
+		pkgs += get_base_query().filter('build <',pkgs[-1].build).fetch(show_nums - len(pkgs))
 
 	return pkgs
 
