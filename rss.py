@@ -3,6 +3,8 @@
 import PyRSS2Gen
 import datetime
 
+from google.appengine.ext import webapp
+from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext import db
 
 from Models import RPM
@@ -50,35 +52,48 @@ def get_pkgs():
 
 	return pkgs
 
-items = []
-lastBuildDate = None
+class MainPage(webapp.RequestHandler):
 
-for pkg in get_pkgs():
+	def get(self):
 
-	if not lastBuildDate:
-		lastBuildDate = pkg.build
+		items = []
+		lastBuildDate = None
 
-	items.append(
-		PyRSS2Gen.RSSItem(
-			title = get_title(pkg),
-			link = get_link(pkg),
-			description = get_description(pkg),
-			guid = PyRSS2Gen.Guid(pkg.checksum,0),
-			pubDate = pkg.build,
-	))
+		for pkg in get_pkgs():
 
-if not lastBuildDate:
-	lastBuildDate = datetime.datetime.fromtimestamp(0)
+			if not lastBuildDate:
+				lastBuildDate = pkg.build
 
-rss = PyRSS2Gen.RSS2(
+			items.append(
+				PyRSS2Gen.RSSItem(
+					title = get_title(pkg),
+					link = get_link(pkg),
+					description = get_description(pkg),
+					guid = PyRSS2Gen.Guid(pkg.checksum,0),
+					pubDate = pkg.build,
+			))
 
-    title = "rpm feed",
-    link = config.feed_link,
-    description = "rpm feed",
-    lastBuildDate = lastBuildDate,
-    items = items
+		if not lastBuildDate:
+			lastBuildDate = datetime.datetime.fromtimestamp(0)
 
-)
+		rss = PyRSS2Gen.RSS2(
+			title = "rpm feed",
+			link = config.feed_link,
+			description = "rpm feed",
+			lastBuildDate = lastBuildDate,
+			items = items
+		)
 
-print "Content-type: text/xml\n"
-print rss.to_xml()
+		self.response.headers['Content-Type'] = 'text/xml'
+		self.response.out.write(rss.to_xml())
+
+
+application = webapp.WSGIApplication(
+				[('/rss', MainPage)],
+				debug=False)
+
+def main():
+	run_wsgi_app(application)
+
+if __name__ == '__main__':
+	main()
