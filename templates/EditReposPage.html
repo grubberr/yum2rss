@@ -1,0 +1,21 @@
+<html>
+<head>
+</head>
+<body>
+	<form action="/home/EditRepos" method="POST">
+		<input type="hidden" name="key" value="{{ key }}"/>
+
+		Repository URL:
+		<br/>
+
+		{{ url }}
+		<br/><br/>
+
+		Packages:<br/>
+
+		<textarea name="packages" cols="60" rows="6" title="Packages">{{ packages|escape }}</textarea><br/><br/>
+
+		<input type="submit" value="save"/>
+	</form>
+</body>
+</html>

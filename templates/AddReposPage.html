@@ -1,0 +1,24 @@
+<html>
+<head>
+</head>
+<body>
+	<form action="/home/AddRepos" method="POST">
+
+		Repository URL:
+		<br/>
+
+		<select name="key">
+			{% for ReposEntiry in ReposList %}
+			<option value="{{ ReposEntiry.key }}">{{ ReposEntiry.url }}</option>
+			{% endfor %}
+		</select>
+		<br/><br/>
+
+		Packages:<br/>
+
+		<textarea name="packages" cols="60" rows="6" title="Packages"></textarea><br/><br/>
+
+		<input type="submit" value="save"/>
+	</form>
+</body>
+</html>

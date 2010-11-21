@@ -6,8 +6,10 @@ import datetime
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext import db
+from google.appengine.api.datastore_errors import BadRequestError
 
 from Models import RPM
+from Models import User
 import config
 
 def get_title(pkg):
@@ -35,13 +37,13 @@ def get_description(pkg):
 def get_link(pkg):
 	return pkg.url + '/' + pkg.location
 
-def get_pkgs():
+def get_pkgs(UserEntity):
 
 	show_days = 3
 	show_nums = 20
 
 	def get_base_query():
-		return RPM.all().filter('haslog =',True).order('-build')
+		return RPM.all().filter('haslog =',True).order('-build').filter('users =',UserEntity)
 
 	pkgs = get_base_query().filter('build >',(datetime.datetime.now() - datetime.timedelta(days=show_days))).fetch(100)
 
@@ -56,36 +58,49 @@ class MainPage(webapp.RequestHandler):
 
 	def get(self):
 
-		items = []
-		lastBuildDate = None
+		key = self.request.get('key')
 
-		for pkg in get_pkgs():
+		if key:
 
-			if not lastBuildDate:
-				lastBuildDate = pkg.build
+			try:
+				UserEntity = db.get(db.Key(key))
+			except (db.BadKeyError, BadRequestError):
+				UserEntity = None
 
-			items.append(
-				PyRSS2Gen.RSSItem(
-					title = get_title(pkg),
-					link = get_link(pkg),
-					description = get_description(pkg),
-					guid = PyRSS2Gen.Guid(pkg.checksum,0),
-					pubDate = pkg.build,
-			))
+			if isinstance(UserEntity,User):
+				items = []
+				lastBuildDate = None
 
-		if not lastBuildDate:
-			lastBuildDate = datetime.datetime.fromtimestamp(0)
+				for pkg in get_pkgs(UserEntity):
 
-		rss = PyRSS2Gen.RSS2(
-			title = "rpm feed",
-			link = config.feed_link,
-			description = "rpm feed",
-			lastBuildDate = lastBuildDate,
-			items = items
-		)
+					if not lastBuildDate:
+						lastBuildDate = pkg.build
 
-		self.response.headers['Content-Type'] = 'text/xml'
-		self.response.out.write(rss.to_xml())
+					items.append(
+						PyRSS2Gen.RSSItem(
+							title = get_title(pkg),
+							link = get_link(pkg),
+							description = get_description(pkg),
+							guid = PyRSS2Gen.Guid(pkg.checksum,0),
+							pubDate = pkg.build,
+					))
+
+				if not lastBuildDate:
+					lastBuildDate = datetime.datetime.fromtimestamp(0)
+
+				rss = PyRSS2Gen.RSS2(
+					title = "rpm feed",
+					link = config.feed_link,
+					description = "rpm feed",
+					lastBuildDate = lastBuildDate,
+					items = items
+				)
+
+				self.response.headers['Content-Type'] = 'text/xml'
+				self.response.out.write(rss.to_xml())
+				return
+
+		self.error(404)
 
 
 application = webapp.WSGIApplication(

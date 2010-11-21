@@ -22,6 +22,7 @@ from google.appengine.ext import db
 from Models import RPM
 from Models import Repos
 from Models import LOG
+from Models import UserRepos
 import config
 from RPMHandler import RPMHandler
 from LOGHandler import LOGHandler
@@ -43,9 +44,23 @@ def set_last_modified(url,last_modified):
 		entity = Repos(url=url,last_modified=last_modified)
 	entity.put()
 
+def get_pkgs_for_url(url):
+	ReposEntiry = Repos.all().filter('url =',url).get()
+	pkgs = set()
+	if ReposEntiry:
+		for UserReposEntiry in ReposEntiry.UserRepos:
+			for pkg in UserReposEntiry.packages:
+				pkgs.add(pkg)
+
+	return list(pkgs)
+
 if os.environ['PATH_INFO'] == '/download':
 
-	for repos in config.urls.keys():
+	urls = set()
+	for UserRepos in UserRepos.all():
+		urls.add(UserRepos.repos.url.encode())
+
+	for repos in urls:
 		url = repos + '/repodata/repomd.xml'
 		params = { 'url': url,
 			   'repos': repos,
@@ -172,7 +187,7 @@ elif os.environ['PATH_INFO'] == '/parse_xml_task':
 
 	pkgs = {}
 	query = db.GqlQuery('SELECT * FROM RPM WHERE name = :1 AND url = :2 ORDER BY build DESC LIMIT 1')
-	for _pkg in config.urls[repos]:
+	for _pkg in get_pkgs_for_url(repos):
 		query.bind(_pkg,repos)
 		if query.count() > 0:
 			pkgs[_pkg] = int(time.mktime(query.get().build.timetuple()))
@@ -192,20 +207,26 @@ elif os.environ['PATH_INFO'] == '/parse_xml_task':
 			data = d.decompress(content)
 			p.feed(data)
 
+
+		ReposEntiry = Repos.all().filter('url =',repos).get()
+
 		for i in ch.pkgs:
-			pkg = RPM()
-			pkg.url = repos
-			pkg.name = i['name']
-			pkg.ver = i['ver']
-			pkg.rel = i['rel']
-			pkg.epoch = i['epoch']
-			pkg.arch = i['arch']
-			pkg.checksum = i['checksum']
-			pkg.summary = ''.join(i['summary'])
-			pkg.description = ''.join(i['description'])
-			pkg.build = datetime.datetime.fromtimestamp(i['build'])
-			pkg.location = i['location']
-			pkg.put()
+			UserKeys = [ UserRepos.user.key() for UserRepos in ReposEntiry.UserRepos.filter('packages =',i['name']) ]
+			if UserKeys:
+				pkg = RPM()
+				pkg.users = UserKeys
+				pkg.url = repos
+				pkg.name = i['name']
+				pkg.ver = i['ver']
+				pkg.rel = i['rel']
+				pkg.epoch = i['epoch']
+				pkg.arch = i['arch']
+				pkg.checksum = i['checksum']
+				pkg.summary = ''.join(i['summary'])
+				pkg.description = ''.join(i['description'])
+				pkg.build = datetime.datetime.fromtimestamp(i['build'])
+				pkg.location = i['location']
+				pkg.put()
 
 		set_last_modified(url,memcache.get('last-modified',namespace=url))
 

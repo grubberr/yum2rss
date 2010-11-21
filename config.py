@@ -5,7 +5,7 @@
 urlfetch_limit = 1000000
 # urlfetch_limit = 1048576
 
-feed_link = 'http://repo2rss.appspot.com/rss'
+feed_link = 'http://yum2rss.appspot.com/rss'
 
 urls = {
  'http://mirror.centos.org/centos/5/os/i386'         : [ 'httpd', 'kernel', 'mysql', 'php', 'selinux-policy', 'glibc', 'kernel-xen' ],

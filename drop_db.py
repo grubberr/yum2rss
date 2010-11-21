@@ -6,6 +6,8 @@ from google.appengine.ext import db
 from Models import RPM
 from Models import Repos
 from Models import LOG
+from Models import User
+from Models import UserRepos
 
 def drop_all_entities(Model):
 
@@ -24,3 +26,5 @@ def drop_all_entities(Model):
 drop_all_entities(RPM)
 drop_all_entities(Repos)
 drop_all_entities(LOG)
+drop_all_entities(User)
+drop_all_entities(UserRepos)

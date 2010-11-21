@@ -1,0 +1,30 @@
+<html>
+<head>
+</head>
+<body>
+<p>
+	<a href="{{ logout }}">logout</a> ( {{ nickname }} )
+	<a href="/rss?key={{ user_key }}">rss</a>
+</p>
+
+{% if UserReposList %}
+<p>
+	<table border="1">
+		<tr>
+			<td> Repository URL </td>
+			<td colspan="2" align="center"> Actions </td>
+		</tr>
+		{% for UserRepos in UserReposList %}
+		<tr>
+			<td> {{ UserRepos.repos.url }} </td>
+			<td> <a href="/home/EditRepos?key={{ UserRepos.key }}">edit</a></td>
+			<td> <a href="/home/DeleteRepos?key={{ UserRepos.key }}">delete</a></td>
+		</tr>
+		{% endfor %}
+	</table>
+</p>
+{% endif %}
+
+<p><a href="/home/AddRepos">add</a></p>
+</body>
+</html>
