@@ -88,10 +88,12 @@ class MainPage(webapp.RequestHandler):
 				if not lastBuildDate:
 					lastBuildDate = datetime.datetime.fromtimestamp(0)
 
+				nickname = UserEntity.user.nickname()
+
 				rss = PyRSS2Gen.RSS2(
-					title = "rpm feed",
+					title = "%s rpm feed" % nickname,
 					link = config.feed_link,
-					description = "rpm feed",
+					description = "%s rpm feed" % nickname,
 					lastBuildDate = lastBuildDate,
 					items = items
 				)
