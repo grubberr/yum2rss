@@ -8,6 +8,7 @@ from Models import Repos
 from Models import LOG
 from Models import User
 from Models import UserRepos
+from Models import URL
 
 def drop_all_entities(Model):
 
@@ -28,3 +29,4 @@ drop_all_entities(Repos)
 drop_all_entities(LOG)
 drop_all_entities(User)
 drop_all_entities(UserRepos)
+drop_all_entities(URL)

@@ -3,7 +3,6 @@ from google.appengine.ext import db
 
 class Repos(db.Model):
 	url = db.StringProperty()
-	last_modified = db.StringProperty()
 
 class RPM(db.Model):
 	url = db.StringProperty()
@@ -33,3 +32,7 @@ class UserRepos(db.Model):
 	user = db.ReferenceProperty(User,required=True,collection_name='UserRepos')
 	repos = db.ReferenceProperty(Repos,required=True,collection_name='UserRepos')
 	packages = db.ListProperty(str)
+
+class URL(db.Model):
+	url = db.StringProperty()
+	last_modified = db.StringProperty()

@@ -23,12 +23,13 @@ from Models import RPM
 from Models import Repos
 from Models import LOG
 from Models import UserRepos
+from Models import URL
 import config
 from RPMHandler import RPMHandler
 from LOGHandler import LOGHandler
 
 def get_last_modified(url):
-	query = Repos.all().filter('url =',url)
+	query = URL.all().filter('url =',url)
 	entity = query.get()
 	if entity:
 		return entity.last_modified
@@ -36,12 +37,12 @@ def get_last_modified(url):
 		return None
 
 def set_last_modified(url,last_modified):
-	query = Repos.all().filter('url =',url)
+	query = URL.all().filter('url =',url)
 	entity = query.get()
 	if entity:
 		entity.last_modified = last_modified
 	else:
-		entity = Repos(url=url,last_modified=last_modified)
+		entity = URL(url=url,last_modified=last_modified)
 	entity.put()
 
 def get_pkgs_for_url(url):
