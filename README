@@ -1,0 +1,3 @@
+yum2rss - watch for updates in yum repositories via RSS. 
+It allows you to watch for updates of specific packages in yum repositories via RSS 2.0 feeds.
+http://yum2rss.appspot.com/
